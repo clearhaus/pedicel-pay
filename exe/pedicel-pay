@@ -1,0 +1,183 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'thor'
+require 'pedicel-pay'
+require 'json'
+
+module PedicelPay
+  class Cli < Thor
+    BACKEND_FILES = [
+      'ca-key.pem',
+      'ca-certificate.pem',
+      'intermediate-key.pem',
+      'intermediate-certificate.pem',
+      'leaf-key.pem',
+      'leaf-certificate.pem',
+    ]
+
+    CLIENT_FILES = [
+      'client-key.pem',
+      'client-certificate.pem',
+    ]
+
+    FILES = BACKEND_FILES | CLIENT_FILES
+
+
+    desc 'clean', 'Remove all generated files'
+    option :path, type: :string, path: true, aliases: :p
+
+    def clean
+      FILES.
+        map { |f| options[:path] ? File.join(File.expand_path(options[:path]), f) : f }.
+        each { |f| File.delete(f) if File.exist?(f) }
+    end
+
+
+    desc 'generate-backend', 'Generate a backend: CA, intermediate and leaf certificates and keys'
+    option :force, type: :boolean, aliases: :f
+    option :destination, type: :string, aliases: [:dest, :d]
+    option :path, type: :string, path: true, aliases: :p
+
+    def generate_backend
+      path = File.expand_path(options[:path] || '.')
+
+      BACKEND_FILES.map{|f| File.join(path, f)}.each do |file|
+        if File.exist?(file)
+          $stderr.puts "File #{file} already exist"
+          exit 1
+        end
+      end unless options[:force]
+
+      Dir.mkdir(path) unless File.directory?(path)
+
+      backend = PedicelPay::Backend.generate
+
+      File.open(File.join(path, 'ca-key.pem'), 'w')                   { |f| f.write(backend.ca_key.to_pem) }
+      File.open(File.join(path, 'ca-certificate.pem'), 'w')           { |f| f.write(backend.ca_certificate.to_pem) }
+      File.open(File.join(path, 'intermediate-key.pem'), 'w')         { |f| f.write(backend.intermediate_key.to_pem) }
+      File.open(File.join(path, 'intermediate-certificate.pem'), 'w') { |f| f.write(backend.intermediate_certificate.to_pem) }
+      File.open(File.join(path, 'leaf-key.pem'), 'w')                 { |f| f.write(backend.leaf_key.to_pem) }
+      File.open(File.join(path, 'leaf-certificate.pem'), 'w')         { |f| f.write(backend.leaf_certificate.to_pem) }
+    end
+
+
+    desc 'check-backend', 'Check that the backend created is functional'
+    option :path, type: :string, path: true, aliases: :p
+
+    def check_backend
+      backend = Helper.load_backend(options[:path])
+
+      backend.is_a?(PedicelPay::Backend) && backend.validate
+    rescue => e
+      $stderr.puts e
+      exit 1
+    end
+
+
+    desc 'generate-client', 'Generate a client, the merchant side'
+    option 'backend-path', type: :string, path: true, aliases: :b
+    option 'force', type: :boolean, aliases: :f
+    option 'path', type: :string, path: true, aliases: :p
+    option 'valid-from', type: :string
+    option 'valid-to', type: :string
+
+    def generate_client
+      path = File.expand_path(options[:path] || '.')
+
+      valid = \
+        (options['valid-from'] ? Time.parse(options['valid-from']) : PedicelPay.config[:valid].min) ..
+        (options['valid-to']   ? Time.parse(options['valid-to'])   : PedicelPay.config[:valid].max)
+
+      CLIENT_FILES.map{|f| File.join(path, f)}.each do |file|
+        if File.exist?(file)
+          $stderr.puts "File #{file} already exist"
+          exit 1
+        end
+      end unless options[:force]
+
+      Dir.mkdir(path) unless File.directory?(path)
+
+      backend = Helper.load_backend(options['backend-path'])
+
+      client = PedicelPay::Client.new
+      client.generate_key
+
+      client.certificate = backend.sign_csr(client.generate_csr)
+
+      File.open(File.join(path, 'client-key.pem'), 'w')         { |f| f.write(client.key.to_pem) }
+      File.open(File.join(path, 'client-certificate.pem'), 'w') { |f| f.write(client.certificate.to_pem) }
+    end
+
+
+    desc 'generate-token', 'Generate a token'
+    option 'backend-path', type: :string, path: true, aliases: :b
+    option 'client-path', type: :string, path: true, aliases: :c
+    option 'sample', type: :boolean, aliases: :s
+    option 'amount', type: :string
+    option 'currency', type: :string
+    option 'pan', type: :string
+    option 'expiry', type: :string
+    option 'time', type: :string
+
+    def generate_token
+      backend = Helper.load_backend(options['backend-path'])
+      client = Helper.load_client(options['client-path'])
+
+      token = PedicelPay::Token.new
+      token.sample if options['sample']
+
+      token.unencrypted_data.amount   = options['amount'].to_i if options['amount']&.to_i
+      token.unencrypted_data.currency = options['currency'] if options['currency']
+      token.unencrypted_data.pan      = options['pan'] if options['pan']
+      token.unencrypted_data.expiry   = options['expiry'] if options['expiry']
+
+      backend.encrypt(token: token, recipient: client)
+      backend.sign(token)
+
+      puts token.to_json
+    end
+
+
+    desc 'decrypt-token', 'Decrypt a token'
+    option 'client-path', type: :string, path: true, aliases: :c
+    option 'backend-path', type: :string, path: true, aliases: :b
+    option 'file', type: :string, aliases: :f
+
+    def decrypt_token
+      raw_token = options['file'] ? File.read(options['file']) : $stdin.read
+      token = JSON.parse(raw_token)
+
+      client = Helper.load_client(options['client-path'])
+      backend = Helper.load_backend(options['backend-path'])
+
+      puts client.decrypt(token, ca_certificate_pem: backend.ca_certificate.to_pem)
+    end
+  end
+
+  class Helper
+    def self.load_backend(path)
+      path = File.expand_path(path || '.')
+
+      PedicelPay::Backend.new(
+        ca_key:                   OpenSSL::PKey::EC.new(         File.read(File.join(path, 'ca-key.pem'))),
+        ca_certificate:           OpenSSL::X509::Certificate.new(File.read(File.join(path, 'ca-certificate.pem'))),
+        intermediate_key:         OpenSSL::PKey::EC.new(         File.read(File.join(path, 'intermediate-key.pem'))),
+        intermediate_certificate: OpenSSL::X509::Certificate.new(File.read(File.join(path, 'intermediate-certificate.pem'))),
+        leaf_key:                 OpenSSL::PKey::EC.new(         File.read(File.join(path, 'leaf-key.pem'))),
+        leaf_certificate:         OpenSSL::X509::Certificate.new(File.read(File.join(path, 'leaf-certificate.pem')))
+      )
+    end
+
+    def self.load_client(path)
+      path = File.expand_path(path || '.')
+
+      PedicelPay::Client.new(
+        key:               OpenSSL::PKey::EC.new(         File.read(File.join(path, 'client-key.pem'))),
+        certificate:       OpenSSL::X509::Certificate.new(File.read(File.join(path, 'client-certificate.pem'))),
+      )
+    end
+  end
+end
+
+PedicelPay::Cli.start(ARGV)
