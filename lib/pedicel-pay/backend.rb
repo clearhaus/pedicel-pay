@@ -28,7 +28,7 @@ module PedicelPay
     end
 
     def generate_client(valid: PedicelPay.config[:valid])
-      client = PedicelPay::Client.new(ca_certificate_pem: ca_certificate.pem)
+      client = PedicelPay::Client.new(ca_certificate_pem: ca_certificate.to_pem)
       client.generate_key
 
       client.ca_certificate_pem = ca_certificate.to_pem
