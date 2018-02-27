@@ -38,7 +38,12 @@ module PedicelPay
 
     def sample
       self.unencrypted_data ||= TokenData.new.sample unless self.encrypted_data
-      self.header = TokenHeader.new.sample
+
+      if self.header
+        self.header.sample
+      else
+        self.header = TokenHeader.new.sample
+      end
 
       self
     end
