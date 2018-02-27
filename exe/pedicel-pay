@@ -113,7 +113,6 @@ module PedicelPay
     desc 'generate-token', 'Generate a token'
     option 'backend-path', type: :string, path: true, aliases: :b
     option 'client-path', type: :string, path: true, aliases: :c
-    option 'sample', type: :boolean, aliases: :s
     option 'amount', type: :string
     option 'currency', type: :string
     option 'pan', type: :string
@@ -125,7 +124,7 @@ module PedicelPay
       client = Helper.load_client(options['client-path'])
 
       token = PedicelPay::Token.new
-      token.sample if options['sample']
+      token.sample
 
       token.unencrypted_data.amount   = options['amount'].to_i if options['amount']&.to_i
       token.unencrypted_data.currency = options['currency'] if options['currency']
