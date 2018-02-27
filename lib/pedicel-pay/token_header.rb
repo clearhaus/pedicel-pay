@@ -13,10 +13,6 @@ module PedicelPay
         data_hash, ephemeral_pubkey,  pubkey_hash,  transaction_id
     end
 
-    def generate_transaction_id
-      self.transaction_id = PedicelPay.config[:random].random_bytes(32)
-    end
-
     def to_hash
       calculate_hash unless pubkey_hash
 
@@ -31,7 +27,7 @@ module PedicelPay
     end
 
     def sample
-      self.transaction_id ||= Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
+      self.transaction_id ||= PedicelPay.config[:random].bytes(5)
 
       self
     end
