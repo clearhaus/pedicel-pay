@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage      = 'https://github.com/clearhaus/pedicel-pay'
   s.license       = 'MIT'
 
-  s.files = `git ls-files -z`.split(0.chr).reject {|f| f.match(/^spec\//) }
+  s.files         = `ls`.split.reject {|f| f.match(/^spec\//) }
   s.bindir        = 'exe'
   s.executables   = s.files.grep(/^exe\//) { |f| File.basename(f) }
   s.require_paths = ['lib']
