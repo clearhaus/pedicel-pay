@@ -1,7 +1,6 @@
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-#require File.expand_path('../lib/pedicel-pay/version', __FILE__)
 require 'pedicel-pay/version'
 
 Gem::Specification.new do |s|
