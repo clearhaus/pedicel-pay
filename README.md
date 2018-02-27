@@ -9,7 +9,7 @@ CLI part and a Ruby library e.g. for testing purposes.
 
 1. Generate a backend (Apple side of Apple Pay):
 
-    $ pedicel-pay generate-backend
+        $ pedicel-pay generate-backend
 
    Creates these files:
    * `ca.key`
@@ -21,7 +21,7 @@ CLI part and a Ruby library e.g. for testing purposes.
 
 2. Generate a client (merchant side of Apple Pay):
 
-    $ pedicel-pay generate-client
+        $ pedicel-pay generate-client
 
    Creates `client.key` and `client-certificate.pem`.
 
