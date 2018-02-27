@@ -27,12 +27,12 @@ module PedicelPay
       @leaf_certificate = leaf_certificate
     end
 
-    def generate_client
+    def generate_client(valid: PedicelPay.config[:valid])
       client = PedicelPay::Client.new(ca_certificate_pem: ca_certificate.pem)
       client.generate_key
 
       client.ca_certificate_pem = ca_certificate.to_pem
-      client.certificate = sign_csr(client.generate_csr)
+      client.certificate = sign_csr(client.generate_csr, valid: valid)
 
       client
     end
