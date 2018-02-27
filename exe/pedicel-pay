@@ -119,7 +119,6 @@ module PedicelPay
     option 'currency', type: :string
     option 'pan', type: :string
     option 'expiry', type: :string
-    option 'time', type: :string
 
     def generate_token
       backend = Helper.load_backend(options['backend-path'])
