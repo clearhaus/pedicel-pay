@@ -27,7 +27,7 @@ module PedicelPay
     end
 
     def sample
-      self.transaction_id ||= PedicelPay.config[:random].bytes(5)
+      self.transaction_id ||= PedicelPay.config[:random].bytes(32)
 
       self
     end
