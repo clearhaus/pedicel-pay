@@ -15,7 +15,7 @@ module PedicelPay
       :cryptogram,
       :eci
 
-    CURRENCIES = %w{
+    CURRENCIES = %w[
       008 012 032 036 044 048 050 051 052 060 064 068 072 084 090 096 104 108
       116 124 132 136 144 152 156 170 174 188 191 192 203 208 214 222 230 232
       238 242 262 270 292 320 324 328 332 340 344 348 352 356 360 364 368 376
@@ -26,7 +26,7 @@ module PedicelPay
       930 931 932 933 934 936 937 938 940 941 943 944 946 947 948 949 950 951
       952 953 955 956 957 958 959 960 961 962 963 964 965 967 968 969 970 971
       972 973 975 976 977 978 979 980 981 984 985 986 990 994 997 999
-    }
+    ].freeze
 
     def initialize(pan: nil, expiry: nil, currency: nil, amount: nil, name: nil, dm_id: nil, cryptogram: nil, eci: nil)
       @pan, @expiry, @currency, @amount, @name, @dm_id, @cryptogram, @eci = \
@@ -83,7 +83,7 @@ module PedicelPay
       self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
 
       # ECI
-      self.eci ||= %w{05 06 07}.sample
+      self.eci ||= %w[05 06 07].sample
 
       self
     end

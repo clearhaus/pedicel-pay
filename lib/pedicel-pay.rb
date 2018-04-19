@@ -1,4 +1,5 @@
-require "bundler/setup"
+# frozen_string_literal: true
+
 require 'openssl'
 
 module PedicelPay
@@ -9,6 +10,8 @@ require 'pedicel-pay/backend'
 require 'pedicel-pay/client'
 require 'pedicel-pay/token'
 
+# PedicelPay is a stand-in for the Apple side of the ApplePay transaction.
+# It's purpose is to allow for unit testing of implementations.
 module PedicelPay
   EC_CURVE = 'prime256v1'
 
@@ -16,7 +19,7 @@ module PedicelPay
     oid: {
       intermediate_certificate:  '1.2.840.113635.100.6.2.14',
       leaf_certificate:          '1.2.840.113635.100.6.29',
-      merchant_identifier_field: '1.2.840.113635.100.6.32',
+      merchant_identifier_field: '1.2.840.113635.100.6.32'
     },
     subject: {
       ca:           OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=Pedicel Certification Authority/CN=Pedicel Root CA - G3'),
@@ -25,8 +28,9 @@ module PedicelPay
       csr:          OpenSSL::X509::Name.parse('/CN=merchant-url.tld'),
       client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK')
     },
+
     random: Random.new,
-    valid: Time.new(Time.now.year-1) .. Time.new(Time.now.year+2),
+    valid: Time.new(Time.now.year - 1)..Time.new(Time.now.year + 2),
   }
 
   def self.config

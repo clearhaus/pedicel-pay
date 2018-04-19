@@ -79,11 +79,16 @@ module PedicelPay
       raise ArgumentError, 'invalid recipient' if merchant_id.nil?
 
       if symmetric_key && !(shared_secret.nil? && ephemeral_pubkey.nil?)
-        raise ArgumentError, 'specify either symmetric_key or both of shared_secret and ephemeral_pubkey'
+        raise ArgumentError, <<~ERROR
+          specify either symmetric_key or both of shared_secret\
+          and ephemeral_pubkey
+        ERROR
       elsif shared_secret.nil? ^ ephemeral_pubkey.nil?
-        raise ArgumentError, 'shared_secret and ephemeral_pubkey must belong together'
+        raise ArgumentError,
+              'shared_secret and ephemeral_pubkey must belong together'
       elsif shared_secret.nil? && ephemeral_pubkey.nil?
-        shared_secret, ephemeral_pubkey = generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
+        shared_secret, ephemeral_pubkey =
+          generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
       end
 
       token.encrypted_data = Helper.encrypt(
@@ -105,7 +110,7 @@ module PedicelPay
         Helper.ec_key_to_pkey_public_key(token.header.ephemeral_pubkey).to_der,
         token.encrypted_data,
         token.header.transaction_id,
-        token.header.data_hash,
+        token.header.data_hash
       ].compact.join
 
       signature = OpenSSL::PKCS7.sign(

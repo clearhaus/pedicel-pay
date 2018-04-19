@@ -3,6 +3,8 @@ require 'pedicel-pay/token_header'
 require 'digest'
 
 module PedicelPay
+  # Class for representing/generating an ApplePay Payment Token
+  # https://developer.apple.com/library/content/documentation/PassKit/Reference/PaymentTokenJSON/PaymentTokenJSON.html
   class Token
     Error = Class.new(PedicelPay::Error)
 
@@ -12,9 +14,12 @@ module PedicelPay
       :unencrypted_data,
       :encrypted_data
 
-    def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil, signature: nil)
-      @unencrypted_data, @encrypted_data, @header, @signature = \
-       unencrypted_data,  encrypted_data,   header, signature
+    def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil,
+                   signature: nil)
+      @unencrypted_data = unencrypted_data
+      @encrypted_data   = encrypted_data
+      @header           = header
+      @signature        = signature
     end
 
     def update_pubkey_hash(recipient:)
