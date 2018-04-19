@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 require 'json'
 
 module PedicelPay
-  class TokenData
+  # Represents data of applepay token
+  class TokenData # rubocop:disable Metrics/ClassLength
     Error = Class.new(PedicelPay::Error)
     DateError = Class.new(Error)
 
@@ -63,7 +66,7 @@ module PedicelPay
       to_hash.to_json
     end
 
-    def sample(expired: nil, pan_length: nil)
+    def sample(expired: nil, pan_length: nil) # rubocop:disable Metrics/AbcSize
       # PAN
       # Override @pan if pan_length doesn't match.
       if pan.nil? || (pan_length && pan.length != pan_length)
@@ -81,22 +84,27 @@ module PedicelPay
       # Think very carefully about all the crazy corner cases.
       now = Time.now
       if expiry.nil? || (expired ^ card_expired?(now)) # Cannot use "soon".
-        self.expiry = self.class.sample_expiry(expired: expired, now: now, soon: now + 5*60)
+        self.expiry =
+          self.class.sample_expiry(expired: expired,
+                                   now: now,
+                                   soon: now + 5 * 60)
       end
 
       # Currency
       self.currency ||= CURRENCIES.sample
 
       # Amount
-      self.amount ||= rand(100..99999)
+      self.amount ||= rand(100..99_999)
 
       # Name
 
       # Device Manufacturer Identification
-      self.dm_id ||= Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
+      self.dm_id ||=
+        Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
 
       # Cryptogram
-      self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
+      self.cryptogram ||=
+        Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
 
       # ECI
       self.eci ||= %w[05 06 07].sample
@@ -113,10 +121,11 @@ module PedicelPay
       # Think very carefully about all the crazy corner cases.
 
       now  ||= Time.now
-      soon ||= now + 5*60
+      soon ||= now + 5 * 60
 
-      year  = self.sample_expiry_year(expired: expired, soon: soon)
-      month = self.sample_expiry_month(expired: expired, year: year, now: now, soon: soon)
+      year  = sample_expiry_year(expired: expired, soon: soon)
+      month = sample_expiry_month(expired: expired, year: year,
+                                  now: now, soon: soon)
 
       require 'date'
       Date.civil(year, month, -1).strftime('%y%m%d')
@@ -129,7 +138,7 @@ module PedicelPay
       case expired
       when nil   then -5..6
       when true  then -5..0
-      when false then  0..6
+      when false then 0..6
       end
         .map { |i| soon.year + i }
         .to_a.sample
@@ -143,13 +152,14 @@ module PedicelPay
       when nil
         1..12
       when true
-        year < now.year ? 1..12 : 1..(now.month-1)
+        year < now.year ? 1..12 : 1..(now.month - 1)
       when false
-        raise DateError, 'cannot expire in a soon future year' if expired && year > soon.year
+        raise DateError, 'cannot expire in a soon future year' \
+          if expired && year > soon.year
+
         year == soon.year ? 1..soon.month : 1..12
       end
         .to_a.sample
     end
   end
 end
-

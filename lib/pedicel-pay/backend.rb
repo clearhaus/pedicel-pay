@@ -11,14 +11,13 @@ module PedicelPay
     KeyError = Class.new(PedicelPay::Backend::Error)
 
     attr_accessor \
-                :ca_key,           :ca_certificate,
+      :ca_key,           :ca_certificate,
       :intermediate_key, :intermediate_certificate,
-              :leaf_key,         :leaf_certificate
+      :leaf_key,         :leaf_certificate
 
-    def initialize(          ca_key: nil,           ca_certificate: nil,
+    def initialize(ca_key: nil,           ca_certificate: nil,
                    intermediate_key: nil, intermediate_certificate: nil,
-                           leaf_key: nil,         leaf_certificate: nil,
-                   valid: PedicelPay.config[:valid])
+                   leaf_key: nil,         leaf_certificate: nil)
       @ca_key         = ca_key
       @ca_certificate = ca_certificate
 
@@ -78,7 +77,9 @@ module PedicelPay
       [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
 
-    def encrypt(token:, recipient:, symmetric_key: nil, shared_secret: nil, ephemeral_pubkey: nil)
+    def encrypt(token:, recipient:, symmetric_key: nil,
+                shared_secret: nil, ephemeral_pubkey: nil)
+
       raise ArgumentError, 'invalid token' unless token.is_a?(Token)
 
       merchant_id = Helper.merchant_id(recipient)
@@ -89,7 +90,9 @@ module PedicelPay
           specify either symmetric_key or both of shared_secret\
           and ephemeral_pubkey
         ERROR
-      elsif shared_secret.nil? ^ ephemeral_pubkey.nil?
+      end
+
+      if shared_secret.nil? ^ ephemeral_pubkey.nil?
         raise ArgumentError,
               'shared_secret and ephemeral_pubkey must belong together'
       elsif shared_secret.nil? && ephemeral_pubkey.nil?
@@ -108,9 +111,11 @@ module PedicelPay
       token
     end
 
-    def sign(token)
-      raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
-      raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
+    def sign(token, sign_cert, sign_key)
+      raise ArgumentError, 'token has no encrypted_data' unless
+        token.encrypted_data
+      raise ArgumentError, 'token has no ephemeral_pubkey' unless
+        token.header.ephemeral_pubkey
 
       message = [
         Helper.ec_key_to_pkey_public_key(token.header.ephemeral_pubkey).to_der,
@@ -176,7 +181,8 @@ module PedicelPay
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
-      cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
+      # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
+      cert.version = 2
       cert.serial = 1
       cert.subject = PedicelPay.config[:subject][:intermediate]
       cert.issuer = ca_certificate.subject
