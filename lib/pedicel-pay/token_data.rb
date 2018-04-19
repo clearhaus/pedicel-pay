@@ -28,7 +28,8 @@ module PedicelPay
       972 973 975 976 977 978 979 980 981 984 985 986 990 994 997 999
     ].freeze
 
-    def initialize(pan: nil, expiry: nil, currency: nil, amount: nil, name: nil, dm_id: nil, cryptogram: nil, eci: nil)
+    def initialize(pan: nil, expiry: nil, currency: nil, amount: nil,
+                   name: nil, dm_id: nil, cryptogram: nil, eci: nil)
       @pan, @expiry, @currency, @amount, @name, @dm_id, @cryptogram, @eci = \
         pan, expiry,  currency,  amount,  name,  dm_id,  cryptogram,  eci
     end
@@ -55,8 +56,12 @@ module PedicelPay
       # PAN
       # Override @pan if pan_length doesn't match.
       if pan.nil? || (pan_length && pan.length != pan_length)
-        pan_length ||= [12, 16,16,16,16,16,16,16,16,16,16, 19,19,19].sample
-        self.pan = [[2,4,5,6].sample, *(2..pan_length).map{rand(0..9)}].join.to_i
+        pan_length ||=
+          [12, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 19, 19, 19].sample
+
+        self.pan = [
+          [2, 4, 5, 6].sample, *(2..pan_length).map { rand(0..9) }
+        ].join
       end
 
       # Expiry

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'pedicel-pay/helper'
 require 'pedicel'
 require 'openssl'
@@ -48,8 +50,12 @@ module PedicelPay
       cert.issuer = intermediate_certificate.issuer
       cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
 
-      merchant_id_hex = Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(32))
-      oid_ext = OpenSSL::X509::Extension.new(Pedicel.config[:oids][:merchant_identifier_field], merchant_id_hex)
+      merchant_id_hex =
+        Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(32))
+
+      oid_ext = OpenSSL::X509::Extension.new(
+        Pedicel.config[:oids][:merchant_identifier_field], merchant_id_hex
+      )
 
       cert.add_extension(oid_ext)
 
@@ -226,22 +232,32 @@ module PedicelPay
     end
 
     def validate_ca
-      raise KeyError, 'ca private key not valid for ca certificate' unless ca_certificate.check_private_key(ca_key)
-      raise CertificateError, 'ca certificate is not self-signed' unless ca_certificate.verify(ca_key)
+      raise KeyError, 'ca private key not valid for ca certificate' unless
+        ca_certificate.check_private_key(ca_key)
+
+      raise CertificateError, 'ca certificate is not self-signed' unless
+        ca_certificate.verify(ca_key)
 
       true
     end
 
     def validate_intermediate
-      raise KeyError, 'intermediate private key not valid for intermediate certificate' unless intermediate_certificate.check_private_key(intermediate_key)
-      raise CertificateError, 'intermediate certificate not signed by ca' unless intermediate_certificate.verify(ca_key)
+      raise KeyError, 'intermediate private key not valid for intermediate '\
+        'certificate' unless
+        intermediate_certificate.check_private_key(intermediate_key)
+
+      raise CertificateError, 'intermediate certificate not signed by ca' unless
+        intermediate_certificate.verify(ca_key)
 
       true
     end
 
     def validate_leaf
-      raise KeyError, 'leaf private key not valid for leaf certificate' unless leaf_certificate.check_private_key(leaf_key)
-      raise CertificateError, 'leaf certificate not signed my intermediate' unless leaf_certificate.verify(intermediate_key)
+      raise KeyError, 'leaf private key not valid for leaf certificate' unless
+        leaf_certificate.check_private_key(leaf_key)
+
+      raise CertificateError, 'leaf certificate not signed by intermediate' \
+        unless leaf_certificate.verify(intermediate_key)
 
       true
     end

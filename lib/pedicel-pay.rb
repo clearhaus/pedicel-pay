@@ -31,7 +31,7 @@ module PedicelPay
 
     random: Random.new,
     valid: Time.new(Time.now.year - 1)..Time.new(Time.now.year + 2),
-  }
+  }.freeze
 
   def self.config
     @@config ||= DEFAULTS

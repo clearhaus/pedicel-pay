@@ -37,8 +37,8 @@ module PedicelPay
         'data'      => Base64.strict_encode64(encrypted_data),
         'header'    => header.to_hash,
         'signature' => signature,
-        'version'   => 'EC_v1',
-      }.to_json
+        'version'   => 'EC_v1'
+      }
     end
 
     def sample
