@@ -29,7 +29,7 @@ module PedicelPay
                else raise ArgumentError, 'invalid recipient'
                end
 
-      header.pubkey_hash = (Digest::SHA256.new << pubkey.to_der).to_s
+      header.pubkey_hash = Digest::SHA256.base64digest pubkey.to_der
     end
 
     def to_json
