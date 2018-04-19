@@ -126,8 +126,8 @@ module PedicelPay
       ].compact.join
 
       signature = OpenSSL::PKCS7.sign(
-        leaf_certificate,
-        leaf_key,
+        sign_cert,
+        sign_key,
         message,
         [intermediate_certificate, ca_certificate], # Chain.
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
@@ -144,32 +144,39 @@ module PedicelPay
       token
     end
 
-    def self.generate(valid: PedicelPay.config[:valid])
-      ck, cc = generate_ca(valid: valid)
+    def self.generate(config: PedicelPay.config)
+      ck, cc = generate_ca(config: config)
 
-      ik, ic = generate_intermediate(ca_key: ck, ca_certificate: cc, valid: valid)
+      ik, ic = generate_intermediate(
+        ca_key: ck,
+        ca_certificate: cc,
+        config: config
+      )
 
-      lk, lc = generate_leaf(intermediate_key: ik, intermediate_certificate: ic, valid: valid)
+      lk, lc = generate_leaf(
+        intermediate_key: ik,
+        intermediate_certificate: ic,
+        config: config
+      )
 
       new(ca_key: ck, ca_certificate: cc,
           intermediate_key: ik, intermediate_certificate: ic,
-          leaf_key: lk, leaf_certificate: lc,
-          valid: valid)
+          leaf_key: lk, leaf_certificate: lc
+         )
     end
 
-
-    def self.generate_ca(valid: PedicelPay.config[:valid])
+    def self.generate_ca(config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:ca]
+      cert.subject = config[:subject][:ca]
       cert.issuer = cert.subject # Self-signed
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
       ef.subject_certificate = cert
@@ -183,7 +190,8 @@ module PedicelPay
       [key, cert]
     end
 
-    def self.generate_intermediate(ca_key:, ca_certificate:, valid: PedicelPay.config[:valid])
+    def self.generate_intermediate(ca_key:, ca_certificate:,
+                                   config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
@@ -191,37 +199,49 @@ module PedicelPay
       # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
       cert.version = 2
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:intermediate]
+      cert.subject = config[:subject][:intermediate]
       cert.issuer = ca_certificate.subject
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
       ef.subject_certificate = ca_certificate
       ef.issuer_certificate = ca_certificate
-      cert.add_extension(ef.create_extension('keyUsage','keyCertSign, cRLSign', true))
-      cert.add_extension(ef.create_extension('subjectKeyIdentifier','hash',false))
 
-      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:intermediate_certificate], ''))
+      # According to [0], CA:TRUE must be set in order to allow signing using
+      # this intermediate certificate.
+      # [0]: https://tools.ietf.org/html/rfc5280#section-4.2.1.9
+      cert.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
 
-      cert.sign(ca_key, OpenSSL::Digest::SHA256.new)
+      cert.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
+      cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
+
+      if config[:custom_intermediate_oid]
+        cert.add_extension(
+          OpenSSL::X509::Extension.new(
+            config[:oid][:intermediate_certificate], ''
+          )
+        )
+      end
+
+      cert.sign(ca_key, OpenSSL::Digest::SHA256.new) if config[:sign_intermediate]
 
       [key, cert]
     end
 
-    def self.generate_leaf(intermediate_key:, intermediate_certificate:, valid: PedicelPay.config[:valid])
+    def self.generate_leaf(intermediate_key:, intermediate_certificate:, config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:leaf]
+      cert.subject = config[:subject][:leaf]
       cert.issuer = intermediate_certificate.subject
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
       ef.subject_certificate = cert
@@ -229,9 +249,12 @@ module PedicelPay
       cert.add_extension(ef.create_extension('keyUsage','digitalSignature', true))
       cert.add_extension(ef.create_extension('subjectKeyIdentifier','hash',false))
 
-      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:leaf_certificate], ''))
+      cert.add_extension( # rubocop:disable Style/MultilineIfModifier
+        OpenSSL::X509::Extension.new(config[:oid][:leaf_certificate], '')
+      ) if config[:custom_leaf_oid]
 
-      cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
+      cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new) if
+        config[:sign_leaf]
 
       [key, cert]
     end

@@ -31,6 +31,13 @@ module PedicelPay
 
     random: Random.new,
     valid: Time.new(Time.now.year - 1)..Time.new(Time.now.year + 2),
+
+    sign_intermediate: true,
+    sign_leaf: true,
+    sign_token: true,
+
+    custom_intermediate_oid: true,
+    custom_leaf_oid: true
   }.freeze
 
   def self.config
