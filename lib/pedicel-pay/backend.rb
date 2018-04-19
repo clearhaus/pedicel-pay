@@ -72,7 +72,8 @@ module PedicelPay
                else raise ArgumentError, 'invalid recipient'
                end
 
-      ephemeral_seckey = OpenSSL::PKey::EC.new('prime256v1').generate_key
+      ephemeral_seckey =
+        OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE).generate_key
 
       [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
