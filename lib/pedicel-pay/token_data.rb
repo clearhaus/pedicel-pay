@@ -30,26 +30,37 @@ module PedicelPay
 
     def initialize(pan: nil, expiry: nil, currency: nil, amount: nil,
                    name: nil, dm_id: nil, cryptogram: nil, eci: nil)
-      @pan, @expiry, @currency, @amount, @name, @dm_id, @cryptogram, @eci = \
-        pan, expiry,  currency,  amount,  name,  dm_id,  cryptogram,  eci
+      @pan        = pan
+      @expiry     = expiry
+      @currency   = currency
+      @amount     = amount
+      @name       = name
+      @dm_id      = dm_id
+      @cryptogram = cryptogram
+      @eci        = eci
+    end
+
+    def to_hash
+      data = { onlinePaymentCryptogram: cryptogram }
+      data[:eciIndicator] = eci if eci
+
+      result = {
+        applicationPrimaryAccountNumber: pan,
+        applicationExpirationDate: expiry,
+        currencyCode: currency,
+        transactionAmount: amount,
+        deviceManufacturerIdentifier: dm_id,
+        paymentDataType: '3DSecure',
+        paymentData: data
+      }
+
+      result[:cardholderName] = name if name
+
+      result
     end
 
     def to_json
-      data = { 'onlinePaymentCryptogram' => cryptogram }
-      data.merge!('eciIndicator' => eci) if eci
-
-      result = {
-        'applicationPrimaryAccountNumber' => pan,
-        'applicationExpirationDate'       => expiry,
-        'currencyCode'                    => currency,
-        'transactionAmount'               => amount,
-        'deviceManufacturerIdentifier'    => dm_id,
-        'paymentDataType'                 => '3DSecure',
-        'paymentData'                     => data,
-      }
-      result.merge!('cardholderName' => name) if name
-
-      result.to_json
+      to_hash.to_json
     end
 
     def sample(expired: nil, pan_length: nil)

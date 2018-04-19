@@ -33,6 +33,10 @@ module PedicelPay
     end
 
     def to_json
+      to_hash.to_json
+    end
+
+    def to_hash
       {
         'data'      => Base64.strict_encode64(encrypted_data),
         'header'    => header.to_hash,
