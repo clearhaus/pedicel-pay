@@ -131,9 +131,15 @@ module PedicelPay
         message,
         [intermediate_certificate, ca_certificate], # Chain.
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
-      ).to_der
+      )
 
-      token.signature = Base64.strict_encode64(signature)
+      # Add support for more than one signature.
+      unless token.signature.nil?
+        oldsig = OpenSSL::PKCS7.new(Base64.strict_decode64(token.signature))
+        signature = oldsig.add_signer(signature.signers.first)
+      end
+
+      token.signature = Base64.strict_encode64(signature.to_der)
 
       token
     end
