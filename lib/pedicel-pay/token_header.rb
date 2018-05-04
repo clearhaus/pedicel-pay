@@ -17,7 +17,6 @@ module PedicelPay
 
     def to_hash
       raise Error, 'missing ephemeral_pubkey' unless ephemeral_pubkey
-      calculate_hash unless pubkey_hash
 
       result = {
         'ephemeralPublicKey' => Base64.strict_encode64(Helper.ec_key_to_pkey_public_key(ephemeral_pubkey).to_der),
