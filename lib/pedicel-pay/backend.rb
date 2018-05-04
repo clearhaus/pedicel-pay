@@ -56,7 +56,11 @@ module PedicelPay
       cert
     end
 
+    def encrypt_and_sign(token, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
+      encrypt(token, recipient: recipient, shared_secret: shared_secret, ephemeral_pubkey: ephemeral_pubkey)
+      sign(token)
 
+      token
     end
 
     def encrypt(token, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
