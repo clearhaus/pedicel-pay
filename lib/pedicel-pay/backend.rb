@@ -106,8 +106,7 @@ module PedicelPay
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
       )
 
-      # Add support for more than one signature.
-      unless token.signature.nil?
+      if token.signature # Already signed.
         oldsig = OpenSSL::PKCS7.new(Base64.strict_decode64(token.signature))
         signature = oldsig.add_signer(signature.signers.first)
       end
