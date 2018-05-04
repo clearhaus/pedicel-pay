@@ -30,6 +30,8 @@ module PedicelPay
         [x].pack('H*')
       when /\A.{32}\z/
         x
+      else
+        raise ArgumentError, "cannot extract 'merchant_id' from #{x}"
       end
     end
 
