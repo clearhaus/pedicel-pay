@@ -19,14 +19,14 @@ module PedicelPay
     oid: {
       intermediate_certificate:  '1.2.840.113635.100.6.2.14',
       leaf_certificate:          '1.2.840.113635.100.6.29',
-      merchant_identifier_field: '1.2.840.113635.100.6.32'
+      merchant_identifier_field: '1.2.840.113635.100.6.32',
     },
     subject: {
       ca:           OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=Pedicel Certification Authority/CN=Pedicel Root CA - G3'),
       intermediate: OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=Pedicel Certification Authority/CN=Pedicel Application Integration CA - G3'),
       leaf:         OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=pOS Systems/CN=ecc-smp-broker-sign_UC4-PROD'),
       csr:          OpenSSL::X509::Name.parse('/CN=merchant-url.tld'),
-      client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK')
+      client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK'),
     },
 
     random: Random.new,
