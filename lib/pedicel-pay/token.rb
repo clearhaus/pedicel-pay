@@ -24,11 +24,7 @@ module PedicelPay
     end
 
     def update_pubkey_hash(recipient:)
-      pubkey = case recipient
-               when Client                     then recipient.certificate
-               when OpenSSL::X509::Certificate then recipient
-               else raise ArgumentError, 'invalid recipient'
-               end
+      pubkey = Helper.recipient_certificate(recipient: recipient)
 
       header.pubkey_hash = Digest::SHA256.base64digest pubkey.to_der
     end
