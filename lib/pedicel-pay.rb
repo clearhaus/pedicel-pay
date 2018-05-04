@@ -28,16 +28,8 @@ module PedicelPay
       csr:          OpenSSL::X509::Name.parse('/CN=merchant-url.tld'),
       client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK'),
     },
-
     random: Random.new,
     valid: Time.new(Time.now.year - 1)..Time.new(Time.now.year + 2),
-
-    sign_intermediate: true,
-    sign_leaf: true,
-    sign_token: true,
-
-    custom_intermediate_oid: true,
-    custom_leaf_oid: true
   }.freeze
 
   def self.config
