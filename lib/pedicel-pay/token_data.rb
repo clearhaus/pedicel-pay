@@ -67,12 +67,9 @@ module PedicelPay
       # PAN
       # Override @pan if pan_length doesn't match.
       if pan.nil? || (pan_length && pan.length != pan_length)
-        pan_length ||=
-          [12, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 19, 19, 19].sample
+        pan_length ||= [12, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 19, 19, 19].sample
 
-        self.pan = [
-          [2, 4, 5, 6].sample, *(2..pan_length).map { rand(0..9) }
-        ].join
+        self.pan = [ [2, 4, 5, 6].sample, *(2..pan_length).map { rand(0..9) } ].join
       end
 
       # Expiry
@@ -116,8 +113,7 @@ module PedicelPay
       soon ||= now + 5 * 60
 
       year  = sample_expiry_year(expired: expired, soon: soon)
-      month = sample_expiry_month(expired: expired, year: year,
-                                  now: now, soon: soon)
+      month = sample_expiry_month(expired: expired, year: year, now: now, soon: soon)
 
       require 'date'
       Date.civil(year, month, -1).strftime('%y%m%d')
@@ -146,8 +142,7 @@ module PedicelPay
       when true
         year < now.year ? 1..12 : 1..(now.month - 1)
       when false
-        raise DateError, 'cannot expire in a soon future year' \
-          if expired && year > soon.year
+        raise DateError, 'cannot expire in a soon future year' if expired && year > soon.year
 
         year == soon.year ? 1..soon.month : 1..12
       end
