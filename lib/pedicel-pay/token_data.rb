@@ -1,10 +1,7 @@
-# frozen_string_literal: true
-
 require 'json'
 
 module PedicelPay
-  # Represents data of applepay token
-  class TokenData # rubocop:disable Metrics/ClassLength
+  class TokenData
     Error = Class.new(PedicelPay::Error)
     DateError = Class.new(Error)
 
@@ -66,7 +63,7 @@ module PedicelPay
       to_hash.to_json
     end
 
-    def sample(expired: nil, pan_length: nil) # rubocop:disable Metrics/AbcSize
+    def sample(expired: nil, pan_length: nil)
       # PAN
       # Override @pan if pan_length doesn't match.
       if pan.nil? || (pan_length && pan.length != pan_length)
