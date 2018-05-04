@@ -49,14 +49,9 @@ module PedicelPay
       cert.issuer = intermediate_certificate.issuer
       cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
 
-      merchant_id_hex =
-        Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(32))
+      merchant_id_hex = Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(32))
 
-      oid_ext = OpenSSL::X509::Extension.new(
-        Pedicel.config[:oids][:merchant_identifier_field], merchant_id_hex
-      )
-
-      cert.add_extension(oid_ext)
+      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:merchant_identifier_field], merchant_id_hex))
 
       cert
     end
@@ -78,9 +73,7 @@ module PedicelPay
       [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
 
-    def encrypt(token:, recipient:, symmetric_key: nil,
-                shared_secret: nil, ephemeral_pubkey: nil)
-
+    def encrypt(token:, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
       raise ArgumentError, 'invalid token' unless token.is_a?(Token)
 
       merchant_id = Helper.merchant_id(recipient)
@@ -113,10 +106,8 @@ module PedicelPay
     end
 
     def sign(token, sign_cert, sign_key)
-      raise ArgumentError, 'token has no encrypted_data' unless
-        token.encrypted_data
-      raise ArgumentError, 'token has no ephemeral_pubkey' unless
-        token.header.ephemeral_pubkey
+      raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
+      raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
 
       message = [
         Helper.ec_key_to_pkey_public_key(token.header.ephemeral_pubkey).to_der,
@@ -147,22 +138,13 @@ module PedicelPay
     def self.generate(config: PedicelPay.config)
       ck, cc = generate_ca(config: config)
 
-      ik, ic = generate_intermediate(
-        ca_key: ck,
-        ca_certificate: cc,
-        config: config
-      )
+      ik, ic = generate_intermediate(ca_key: ck, ca_certificate: cc, config: config)
 
-      lk, lc = generate_leaf(
-        intermediate_key: ik,
-        intermediate_certificate: ic,
-        config: config
-      )
+      lk, lc = generate_leaf(intermediate_key: ik, intermediate_certificate: ic, config: config)
 
       new(ca_key: ck, ca_certificate: cc,
           intermediate_key: ik, intermediate_certificate: ic,
-          leaf_key: lk, leaf_certificate: lc
-         )
+          leaf_key: lk, leaf_certificate: lc)
     end
 
     def self.generate_ca(config: PedicelPay.config)
@@ -190,8 +172,7 @@ module PedicelPay
       [key, cert]
     end
 
-    def self.generate_intermediate(ca_key:, ca_certificate:,
-                                   config: PedicelPay.config)
+    def self.generate_intermediate(ca_key:, ca_certificate:, config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
@@ -217,13 +198,7 @@ module PedicelPay
       cert.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
       cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
 
-      if config[:custom_intermediate_oid]
-        cert.add_extension(
-          OpenSSL::X509::Extension.new(
-            config[:oid][:intermediate_certificate], ''
-          )
-        )
-      end
+      cert.add_extension(OpenSSL::X509::Extension.new(config[:oid][:intermediate_certificate], ''))
 
       cert.sign(ca_key, OpenSSL::Digest::SHA256.new) if config[:sign_intermediate]
 
@@ -249,12 +224,9 @@ module PedicelPay
       cert.add_extension(ef.create_extension('keyUsage','digitalSignature', true))
       cert.add_extension(ef.create_extension('subjectKeyIdentifier','hash',false))
 
-      cert.add_extension( # rubocop:disable Style/MultilineIfModifier
-        OpenSSL::X509::Extension.new(config[:oid][:leaf_certificate], '')
-      ) if config[:custom_leaf_oid]
+      cert.add_extension(OpenSSL::X509::Extension.new(config[:oid][:leaf_certificate], ''))
 
-      cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new) if
-        config[:sign_leaf]
+      cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
 
       [key, cert]
     end

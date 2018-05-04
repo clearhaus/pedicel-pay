@@ -14,8 +14,7 @@ module PedicelPay
       :unencrypted_data,
       :encrypted_data
 
-    def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil,
-                   signature: nil)
+    def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil, signature: nil, version: 'EC_v1')
       @unencrypted_data = unencrypted_data
       @encrypted_data   = encrypted_data
       @header           = header

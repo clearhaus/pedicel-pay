@@ -84,10 +84,7 @@ module PedicelPay
       # Think very carefully about all the crazy corner cases.
       now = Time.now
       if expiry.nil? || (expired ^ card_expired?(now)) # Cannot use "soon".
-        self.expiry =
-          self.class.sample_expiry(expired: expired,
-                                   now: now,
-                                   soon: now + 5 * 60)
+        self.expiry = self.class.sample_expiry(expired: expired, now: now, soon: now + 5 * 60)
       end
 
       # Currency
@@ -99,12 +96,10 @@ module PedicelPay
       # Name
 
       # Device Manufacturer Identification
-      self.dm_id ||=
-        Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
+      self.dm_id ||= Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
 
       # Cryptogram
-      self.cryptogram ||=
-        Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
+      self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
 
       # ECI
       self.eci ||= %w[05 06 07].sample
