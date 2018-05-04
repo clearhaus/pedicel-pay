@@ -54,11 +54,11 @@ module PedicelPay
 
       Dir.mkdir(path) unless File.directory?(path)
 
-      valid = \
+      PedicelPay.config[:valid] = \
         (options['valid-from'] ? Time.parse(options['valid-from']) : PedicelPay.config[:valid].min) ..
         (options['valid-to']   ? Time.parse(options['valid-to'])   : PedicelPay.config[:valid].max)
 
-      backend = PedicelPay::Backend.generate(valid: valid)
+      backend = PedicelPay::Backend.generate
 
       File.open(File.join(path, 'ca-key.pem'), 'w')                   { |f| f.write(backend.ca_key.to_pem) }
       File.open(File.join(path, 'ca-certificate.pem'), 'w')           { |f| f.write(backend.ca_certificate.to_pem) }
