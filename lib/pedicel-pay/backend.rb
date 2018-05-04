@@ -184,7 +184,7 @@ module PedicelPay
       cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
-      ef.subject_certificate = ca_certificate
+      ef.subject_certificate = cert
       ef.issuer_certificate = ca_certificate
 
       # According to [0], CA:TRUE must be set in order to allow signing using
