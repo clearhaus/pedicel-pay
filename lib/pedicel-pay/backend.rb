@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'pedicel-pay/helper'
 require 'pedicel'
 require 'openssl'

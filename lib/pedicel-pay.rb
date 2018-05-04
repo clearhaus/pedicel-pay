@@ -8,8 +8,6 @@ require 'pedicel-pay/backend'
 require 'pedicel-pay/client'
 require 'pedicel-pay/token'
 
-# PedicelPay is a stand-in for the Apple side of the ApplePay transaction.
-# It's purpose is to allow for unit testing of implementations.
 module PedicelPay
   EC_CURVE = 'prime256v1'
 
