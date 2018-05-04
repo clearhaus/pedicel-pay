@@ -36,3 +36,10 @@ module PedicelPay
     @@config ||= DEFAULTS.dup
   end
 end
+
+# Monkey-patch to make OpenSSL::X509::Certificate#sign work.
+class OpenSSL::PKey::EC
+  def private?
+    private_key?
+  end
+end
