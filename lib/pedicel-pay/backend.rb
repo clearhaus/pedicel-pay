@@ -56,21 +56,7 @@ module PedicelPay
       cert
     end
 
-    def generate_shared_secret_and_ephemeral_pubkey(recipient:)
-      pubkey = case recipient
-               when Client
-                 OpenSSL::PKey::EC.new(recipient.certificate.public_key).public_key
-               when OpenSSL::X509::Certificate
-                 OpenSSL::PKey::EC.new(recipient.public_key).public_key
-               when OpenSSL::PKey::EC::Point
-                 recipient
-               else raise ArgumentError, 'invalid recipient'
-               end
 
-      ephemeral_seckey =
-        OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE).generate_key
-
-      [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
 
     def encrypt(token:, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
@@ -133,6 +119,22 @@ module PedicelPay
       token.signature = Base64.strict_encode64(signature.to_der)
 
       token
+    end
+
+    def self.generate_shared_secret_and_ephemeral_pubkey(recipient:)
+      pubkey = case recipient
+               when Client
+                 OpenSSL::PKey::EC.new(recipient.certificate.public_key).public_key
+               when OpenSSL::X509::Certificate
+                 OpenSSL::PKey::EC.new(recipient.public_key).public_key
+               when OpenSSL::PKey::EC::Point
+                 recipient
+               else raise ArgumentError, 'invalid recipient'
+               end
+
+      ephemeral_seckey = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE).generate_key
+
+      [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
 
     def self.generate(config: PedicelPay.config)
