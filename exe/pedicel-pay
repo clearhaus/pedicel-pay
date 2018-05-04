@@ -132,8 +132,7 @@ module PedicelPay
       token.unencrypted_data.pan      = options['pan'] if options['pan']
       token.unencrypted_data.expiry   = options['expiry'] if options['expiry']
 
-      backend.encrypt(token: token, recipient: client)
-      backend.sign(token)
+      backend.encrypt_and_sign(token, recipient: client)
 
       puts token.to_json
     end
