@@ -1,7 +1,5 @@
-# frozen_string_literal: true
-
 module PedicelPay
-  class TokenHeader # :nodoc:
+  class TokenHeader
     Error = Class.new(PedicelPay::Error)
 
     attr_accessor \
