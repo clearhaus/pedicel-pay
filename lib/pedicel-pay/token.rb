@@ -32,6 +32,8 @@ module PedicelPay
     end
 
     def to_hash
+      raise Error, 'no encrypted data' unless encrypted_data
+
       {
         'data'      => Base64.strict_encode64(encrypted_data),
         'header'    => header.to_hash,
