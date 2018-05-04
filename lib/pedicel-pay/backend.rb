@@ -83,7 +83,7 @@ module PedicelPay
       token
     end
 
-    def sign(token, sign_cert, sign_key)
+    def sign(token, certificate: leaf_certificate, key: leaf_key)
       raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
       raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
 
@@ -95,8 +95,8 @@ module PedicelPay
       ].compact.join
 
       signature = OpenSSL::PKCS7.sign(
-        sign_cert,
-        sign_key,
+        certificate,
+        key,
         message,
         [intermediate_certificate, ca_certificate], # Chain.
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
