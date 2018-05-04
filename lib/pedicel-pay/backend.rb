@@ -59,34 +59,26 @@ module PedicelPay
 
     end
 
-    def encrypt(token:, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
+    def encrypt(token, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
       raise ArgumentError, 'invalid token' unless token.is_a?(Token)
 
-      merchant_id = Helper.merchant_id(recipient)
-      raise ArgumentError, 'invalid recipient' if merchant_id.nil?
-
-      if symmetric_key && !(shared_secret.nil? && ephemeral_pubkey.nil?)
-        raise ArgumentError, <<~ERROR
-          specify either symmetric_key or both of shared_secret\
-          and ephemeral_pubkey
-        ERROR
+      if shared_secret && ephemeral_pubkey
+        # Use them. No check that they come from the same ephemeral secret key.
+      elsif shared_secret.nil? ^ ephemeral_pubkey.nil?
+        raise ArgumentError, "'shared_secret' and 'ephemeral_pubkey' must be supplied together"
+      else # None of shared_secret or ephemeral_pubkey is supplied.
+        shared_secret, ephemeral_pubkey = self.class.generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
       end
 
-      if shared_secret.nil? ^ ephemeral_pubkey.nil?
-        raise ArgumentError,
-              'shared_secret and ephemeral_pubkey must belong together'
-      elsif shared_secret.nil? && ephemeral_pubkey.nil?
-        shared_secret, ephemeral_pubkey =
-          generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
-      end
+      symmetric_key = Pedicel::EC.symmetric_key(shared_secret: shared_secret, merchant_id: Helper.merchant_id(recipient))
 
       token.encrypted_data = Helper.encrypt(
         data: token.unencrypted_data.to_json,
-        key: Pedicel::EC.symmetric_key(merchant_id: merchant_id, shared_secret: shared_secret)
+        key: symmetric_key
       )
 
       token.header.ephemeral_pubkey = ephemeral_pubkey
-      token.update_pubkey_hash(recipient: recipient) if recipient
+      token.update_pubkey_hash(recipient: recipient)
 
       token
     end
