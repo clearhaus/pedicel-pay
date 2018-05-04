@@ -197,7 +197,7 @@ module PedicelPay
 
       cert.add_extension(OpenSSL::X509::Extension.new(config[:oid][:intermediate_certificate], ''))
 
-      cert.sign(ca_key, OpenSSL::Digest::SHA256.new) if config[:sign_intermediate]
+      cert.sign(ca_key, OpenSSL::Digest::SHA256.new)
 
       [key, cert]
     end
