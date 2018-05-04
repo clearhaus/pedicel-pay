@@ -33,6 +33,6 @@ module PedicelPay
   }.freeze
 
   def self.config
-    @@config ||= DEFAULTS
+    @@config ||= DEFAULTS.dup
   end
 end
