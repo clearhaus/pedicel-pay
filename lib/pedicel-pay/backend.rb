@@ -187,9 +187,9 @@ module PedicelPay
       ef.subject_certificate = cert
       ef.issuer_certificate = ca_certificate
 
-      # According to [0], CA:TRUE must be set in order to allow signing using
-      # this intermediate certificate.
-      # [0]: https://tools.ietf.org/html/rfc5280#section-4.2.1.9
+      # According to https://tools.ietf.org/html/rfc5280#section-4.2.1.9,
+      # CA:TRUE must be set in order to allow signing using this intermediate
+      # certificate.
       cert.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
 
       cert.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
