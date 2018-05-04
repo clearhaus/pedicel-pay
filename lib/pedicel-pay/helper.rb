@@ -35,12 +35,11 @@ module PedicelPay
       end
     end
 
-    def self.recipient_certificate(recipient)
+    def self.recipient_certificate(recipient:)
       case recipient
-      when Client
-        recipient.certificate
-      when OpenSSL::X509::Certificate
-        recipient
+      when Client                     then recipient.certificate
+      when OpenSSL::X509::Certificate then recipient
+      else raise ArgumentError, 'invalid recipient'
       end
     end
 
