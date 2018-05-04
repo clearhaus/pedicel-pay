@@ -16,6 +16,7 @@ module PedicelPay
     end
 
     def to_hash
+      raise Error, 'missing ephemeral_pubkey' unless ephemeral_pubkey
       calculate_hash unless pubkey_hash
 
       result = {
