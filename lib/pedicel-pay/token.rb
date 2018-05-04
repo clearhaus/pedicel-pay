@@ -3,8 +3,6 @@ require 'pedicel-pay/token_header'
 require 'digest'
 
 module PedicelPay
-  # Class for representing/generating an ApplePay Payment Token
-  # https://developer.apple.com/library/content/documentation/PassKit/Reference/PaymentTokenJSON/PaymentTokenJSON.html
   class Token
     Error = Class.new(PedicelPay::Error)
 
@@ -26,7 +24,7 @@ module PedicelPay
     def update_pubkey_hash(recipient:)
       pubkey = Helper.recipient_certificate(recipient: recipient)
 
-      header.pubkey_hash = Digest::SHA256.base64digest pubkey.to_der
+      header.pubkey_hash = Digest::SHA256.base64digest(pubkey.to_der)
     end
 
     def to_json
