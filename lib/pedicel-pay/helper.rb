@@ -23,10 +23,9 @@ module PedicelPay
     def self.merchant_id(x)
       case x
       when Client
-        Pedicel::EC.new(config: @pedicel.config)
-                   .merchant_id(certificate: x.certificate)
+        Pedicel::EC.merchant_id(certificate: x.certificate)
       when OpenSSL::X509::Certificate
-        Pedicel::EC.new.merchant_id(certificate: x)
+        Pedicel::EC.merchant_id(certificate: x)
       when /\A[0-9a-fA-F]{64}\z/
         [x].pack('H*')
       when /\A.{32}\z/
