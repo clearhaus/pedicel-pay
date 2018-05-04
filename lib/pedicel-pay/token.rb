@@ -12,13 +12,15 @@ module PedicelPay
       :header,
       :signature,
       :unencrypted_data,
-      :encrypted_data
+      :encrypted_data,
+      :version
 
     def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil, signature: nil, version: 'EC_v1')
       @unencrypted_data = unencrypted_data
       @encrypted_data   = encrypted_data
       @header           = header
       @signature        = signature
+      @version          = version
     end
 
     def update_pubkey_hash(recipient:)
@@ -40,7 +42,7 @@ module PedicelPay
         'data'      => Base64.strict_encode64(encrypted_data),
         'header'    => header.to_hash,
         'signature' => signature,
-        'version'   => 'EC_v1'
+        'version'   => version,
       }
     end
 
