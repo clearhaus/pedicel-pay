@@ -34,8 +34,10 @@ module PedicelPay
 end
 
 # Monkey-patch to make OpenSSL::X509::Certificate#sign work.
-class OpenSSL::PKey::EC
-  def private?
-    private_key?
+if OpenSSL::PKey::EC.new.respond_to?(:private_key?) && !OpenSSL::PKey::EC.new.respond_to?(:private?)
+  class OpenSSL::PKey::EC
+    def private?
+      private_key?
+    end
   end
 end
