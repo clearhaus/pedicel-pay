@@ -20,6 +20,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'bundler', '~> 1.16'
   s.add_runtime_dependency 'pedicel', '~> 0.0.2'
-  s.add_runtime_dependency 'thor'
-  s.add_runtime_dependency 'openssl' # for ruby <= 2.3
+  s.add_runtime_dependency 'thor', '~> 0.20'
+  s.add_runtime_dependency 'openssl', '~> 2.1' # for ruby <= 2.3
 end
