@@ -15,7 +15,7 @@ module PedicelPay
       :cryptogram,
       :eci
 
-    CURRENCIES = %w{
+    CURRENCIES = %w[
       008 012 032 036 044 048 050 051 052 060 064 068 072 084 090 096 104 108
       116 124 132 136 144 152 156 170 174 188 191 192 203 208 214 222 230 232
       238 242 262 270 292 320 324 328 332 340 344 348 352 356 360 364 368 376
@@ -26,37 +26,50 @@ module PedicelPay
       930 931 932 933 934 936 937 938 940 941 943 944 946 947 948 949 950 951
       952 953 955 956 957 958 959 960 961 962 963 964 965 967 968 969 970 971
       972 973 975 976 977 978 979 980 981 984 985 986 990 994 997 999
-    }
+    ].freeze
 
-    def initialize(pan: nil, expiry: nil, currency: nil, amount: nil, name: nil, dm_id: nil, cryptogram: nil, eci: nil)
-      @pan, @expiry, @currency, @amount, @name, @dm_id, @cryptogram, @eci = \
-        pan, expiry,  currency,  amount,  name,  dm_id,  cryptogram,  eci
+    def initialize(pan: nil, expiry: nil, currency: nil, amount: nil,
+                   name: nil, dm_id: nil, cryptogram: nil, eci: nil)
+      @pan        = pan
+      @expiry     = expiry
+      @currency   = currency
+      @amount     = amount
+      @name       = name
+      @dm_id      = dm_id
+      @cryptogram = cryptogram
+      @eci        = eci
+    end
+
+    def to_hash
+      data = { onlinePaymentCryptogram: cryptogram }
+      data[:eciIndicator] = eci if eci
+
+      result = {
+        applicationPrimaryAccountNumber: pan,
+        applicationExpirationDate: expiry,
+        currencyCode: currency,
+        transactionAmount: amount,
+        deviceManufacturerIdentifier: dm_id,
+        paymentDataType: '3DSecure',
+        paymentData: data
+      }
+
+      result[:cardholderName] = name if name
+
+      result
     end
 
     def to_json
-      data = { 'onlinePaymentCryptogram' => cryptogram }
-      data.merge!('eciIndicator' => eci) if eci
-
-      result = {
-        'applicationPrimaryAccountNumber' => pan,
-        'applicationExpirationDate'       => expiry,
-        'currencyCode'                    => currency,
-        'transactionAmount'               => amount,
-        'deviceManufacturerIdentifier'    => dm_id,
-        'paymentDataType'                 => '3DSecure',
-        'paymentData'                     => data,
-      }
-      result.merge!('cardholderName' => name) if name
-
-      result.to_json
+      to_hash.to_json
     end
 
     def sample(expired: nil, pan_length: nil)
       # PAN
       # Override @pan if pan_length doesn't match.
       if pan.nil? || (pan_length && pan.length != pan_length)
-        pan_length ||= [12, 16,16,16,16,16,16,16,16,16,16, 19,19,19].sample
-        self.pan = [[2,4,5,6].sample, *(2..pan_length).map{rand(0..9)}].join.to_i
+        pan_length ||= [12, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 19, 19, 19].sample
+
+        self.pan = [ [2, 4, 5, 6].sample, *(2..pan_length).map { rand(0..9) } ].join
       end
 
       # Expiry
@@ -65,14 +78,14 @@ module PedicelPay
       # Think very carefully about all the crazy corner cases.
       now = Time.now
       if expiry.nil? || (expired ^ card_expired?(now)) # Cannot use "soon".
-        self.expiry = self.class.sample_expiry(expired: expired, now: now, soon: now + 5*60)
+        self.expiry = self.class.sample_expiry(expired: expired, now: now, soon: now + 5 * 60)
       end
 
       # Currency
       self.currency ||= CURRENCIES.sample
 
       # Amount
-      self.amount ||= rand(100..99999)
+      self.amount ||= rand(100..99_999)
 
       # Name
 
@@ -83,7 +96,7 @@ module PedicelPay
       self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
 
       # ECI
-      self.eci ||= %w{05 06 07}.sample
+      self.eci ||= %w[05 06 07].sample
 
       self
     end
@@ -97,10 +110,10 @@ module PedicelPay
       # Think very carefully about all the crazy corner cases.
 
       now  ||= Time.now
-      soon ||= now + 5*60
+      soon ||= now + 5 * 60
 
-      year  = self.sample_expiry_year(expired: expired, soon: soon)
-      month = self.sample_expiry_month(expired: expired, year: year, now: now, soon: soon)
+      year  = sample_expiry_year(expired: expired, soon: soon)
+      month = sample_expiry_month(expired: expired, year: year, now: now, soon: soon)
 
       require 'date'
       Date.civil(year, month, -1).strftime('%y%m%d')
@@ -113,7 +126,7 @@ module PedicelPay
       case expired
       when nil   then -5..6
       when true  then -5..0
-      when false then  0..6
+      when false then 0..6
       end
         .map { |i| soon.year + i }
         .to_a.sample
@@ -127,13 +140,13 @@ module PedicelPay
       when nil
         1..12
       when true
-        year < now.year ? 1..12 : 1..(now.month-1)
+        year < now.year ? 1..12 : 1..(now.month - 1)
       when false
         raise DateError, 'cannot expire in a soon future year' if expired && year > soon.year
+
         year == soon.year ? 1..soon.month : 1..12
       end
         .to_a.sample
     end
   end
 end
-

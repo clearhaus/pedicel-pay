@@ -1,4 +1,3 @@
-require "bundler/setup"
 require 'openssl'
 
 module PedicelPay
@@ -23,13 +22,22 @@ module PedicelPay
       intermediate: OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=Pedicel Certification Authority/CN=Pedicel Application Integration CA - G3'),
       leaf:         OpenSSL::X509::Name.parse('/C=DK/O=Pedicel Inc./OU=pOS Systems/CN=ecc-smp-broker-sign_UC4-PROD'),
       csr:          OpenSSL::X509::Name.parse('/CN=merchant-url.tld'),
-      client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK')
+      client:       OpenSSL::X509::Name.parse('/UID=merchant-url.tld.pedicel-merchant.PedicelMerchant/CN=Merchant ID: merchant-url.tld.pedicel-merchant.PedicelMerchant/OU=1W2X3Y4Z5A/O=PedicelMerchant Inc./C=DK'),
     },
     random: Random.new,
-    valid: Time.new(Time.now.year-1) .. Time.new(Time.now.year+2),
-  }
+    valid: Time.new(Time.now.year - 1)..Time.new(Time.now.year + 2),
+  }.freeze
 
   def self.config
-    @@config ||= DEFAULTS
+    @@config ||= DEFAULTS.dup
+  end
+end
+
+# Monkey-patch to make OpenSSL::X509::Certificate#sign work.
+if OpenSSL::PKey::EC.new.respond_to?(:private_key?) && !OpenSSL::PKey::EC.new.respond_to?(:private?)
+  class OpenSSL::PKey::EC
+    def private?
+      private_key?
+    end
   end
 end

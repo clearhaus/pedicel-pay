@@ -35,9 +35,8 @@ module PedicelPay
 
     def decrypt(token, ca_certificate_pem: @ca_certificate_pem, now: Time.now)
       Pedicel::EC.
-        new(token, now: now).
-        decrypt(private_key: key, certificate: certificate,
-                ca_certificate_pem: ca_certificate_pem, now: now)
+        new(token).
+        decrypt(private_key: key, certificate: certificate, ca_certificate_pem: ca_certificate_pem, now: now)
     end
   end
 end

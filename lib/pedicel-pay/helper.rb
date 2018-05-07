@@ -1,5 +1,13 @@
+# frozen_string_literal: true
+
 module PedicelPay
+  # Assistance/collection functions.
   class Helper
+    def initialize(config: PedicelPay.config, pedicel_instance: nil)
+      @config = config
+      @pedicel = pedicel_instance
+    end
+
     def self.ec_key_to_pkey_public_key(ec_key)
       # EC#public_key is not a PKey public key, but an EC point.
       pub = OpenSSL::PKey::EC.new(ec_key.group)
@@ -22,15 +30,16 @@ module PedicelPay
         [x].pack('H*')
       when /\A.{32}\z/
         x
+      else
+        raise ArgumentError, "cannot extract 'merchant_id' from #{x}"
       end
     end
 
-    def self.recipient_certificate(recipient)
+    def self.recipient_certificate(recipient:)
       case recipient
-      when Client
-        recipient.certificate
-      when OpenSSL::X509::Certificate
-        recipient
+      when Client                     then recipient.certificate
+      when OpenSSL::X509::Certificate then recipient
+      else raise ArgumentError, 'invalid recipient'
       end
     end
 

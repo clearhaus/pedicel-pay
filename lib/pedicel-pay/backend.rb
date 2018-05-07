@@ -9,14 +9,13 @@ module PedicelPay
     KeyError = Class.new(PedicelPay::Backend::Error)
 
     attr_accessor \
-                :ca_key,           :ca_certificate,
+      :ca_key,           :ca_certificate,
       :intermediate_key, :intermediate_certificate,
-              :leaf_key,         :leaf_certificate
+      :leaf_key,         :leaf_certificate
 
-    def initialize(          ca_key: nil,           ca_certificate: nil,
+    def initialize(ca_key: nil,           ca_certificate: nil,
                    intermediate_key: nil, intermediate_certificate: nil,
-                           leaf_key: nil,         leaf_certificate: nil,
-                   valid: PedicelPay.config[:valid])
+                   leaf_key: nil,         leaf_certificate: nil)
       @ca_key         = ca_key
       @ca_certificate = ca_certificate
 
@@ -49,14 +48,73 @@ module PedicelPay
       cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
 
       merchant_id_hex = Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(32))
-      oid_ext = OpenSSL::X509::Extension.new(Pedicel.config[:oids][:merchant_identifier_field], merchant_id_hex)
 
-      cert.add_extension(oid_ext)
+      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:merchant_identifier_field], merchant_id_hex))
 
       cert
     end
 
-    def generate_shared_secret_and_ephemeral_pubkey(recipient:)
+    def encrypt_and_sign(token, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
+      encrypt(token, recipient: recipient, shared_secret: shared_secret, ephemeral_pubkey: ephemeral_pubkey)
+      sign(token)
+
+      token
+    end
+
+    def encrypt(token, recipient:, shared_secret: nil, ephemeral_pubkey: nil)
+      raise ArgumentError, 'invalid token' unless token.is_a?(Token)
+
+      if shared_secret && ephemeral_pubkey
+        # Use them. No check that they come from the same ephemeral secret key.
+      elsif shared_secret.nil? ^ ephemeral_pubkey.nil?
+        raise ArgumentError, "'shared_secret' and 'ephemeral_pubkey' must be supplied together"
+      else # None of shared_secret or ephemeral_pubkey is supplied.
+        shared_secret, ephemeral_pubkey = self.class.generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
+      end
+
+      symmetric_key = Pedicel::EC.symmetric_key(shared_secret: shared_secret, merchant_id: Helper.merchant_id(recipient))
+
+      token.encrypted_data = Helper.encrypt(
+        data: token.unencrypted_data.to_json,
+        key: symmetric_key
+      )
+
+      token.header.ephemeral_pubkey = ephemeral_pubkey
+      token.update_pubkey_hash(recipient: recipient)
+
+      token
+    end
+
+    def sign(token, certificate: leaf_certificate, key: leaf_key)
+      raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
+      raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
+
+      message = [
+        Helper.ec_key_to_pkey_public_key(token.header.ephemeral_pubkey).to_der,
+        token.encrypted_data,
+        token.header.transaction_id,
+        token.header.data_hash
+      ].compact.join
+
+      signature = OpenSSL::PKCS7.sign(
+        certificate,
+        key,
+        message,
+        [intermediate_certificate, ca_certificate], # Chain.
+        OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
+      )
+
+      if token.signature # Already signed.
+        oldsig = OpenSSL::PKCS7.new(Base64.strict_decode64(token.signature))
+        signature = oldsig.add_signer(signature.signers.first)
+      end
+
+      token.signature = Base64.strict_encode64(signature.to_der)
+
+      token
+    end
+
+    def self.generate_shared_secret_and_ephemeral_pubkey(recipient:)
       pubkey = case recipient
                when Client
                  OpenSSL::PKey::EC.new(recipient.certificate.public_key).public_key
@@ -67,86 +125,35 @@ module PedicelPay
                else raise ArgumentError, 'invalid recipient'
                end
 
-      ephemeral_seckey = OpenSSL::PKey::EC.new('prime256v1').generate_key
+      ephemeral_seckey = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE).generate_key
 
       [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
 
-    def encrypt(token:, recipient:, symmetric_key: nil, shared_secret: nil, ephemeral_pubkey: nil)
-      raise ArgumentError, 'invalid token' unless token.is_a?(Token)
+    def self.generate(config: PedicelPay.config)
+      ck, cc = generate_ca(config: config)
 
-      merchant_id = Helper.merchant_id(recipient)
-      raise ArgumentError, 'invalid recipient' if merchant_id.nil?
+      ik, ic = generate_intermediate(ca_key: ck, ca_certificate: cc, config: config)
 
-      if symmetric_key && !(shared_secret.nil? && ephemeral_pubkey.nil?)
-        raise ArgumentError, 'specify either symmetric_key or both of shared_secret and ephemeral_pubkey'
-      elsif shared_secret.nil? ^ ephemeral_pubkey.nil?
-        raise ArgumentError, 'shared_secret and ephemeral_pubkey must belong together'
-      elsif shared_secret.nil? && ephemeral_pubkey.nil?
-        shared_secret, ephemeral_pubkey = generate_shared_secret_and_ephemeral_pubkey(recipient: recipient)
-      end
-
-      token.encrypted_data = Helper.encrypt(
-        data: token.unencrypted_data.to_json,
-        key: Pedicel::EC.symmetric_key(merchant_id: merchant_id, shared_secret: shared_secret)
-      )
-
-      token.header.ephemeral_pubkey = ephemeral_pubkey
-      token.update_pubkey_hash(recipient: recipient) if recipient
-
-      token
-    end
-
-    def sign(token)
-      raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
-      raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
-
-      message = [
-        Helper.ec_key_to_pkey_public_key(token.header.ephemeral_pubkey).to_der,
-        token.encrypted_data,
-        token.header.transaction_id,
-        token.header.data_hash,
-      ].compact.join
-
-      signature = OpenSSL::PKCS7.sign(
-        leaf_certificate,
-        leaf_key,
-        message,
-        [intermediate_certificate, ca_certificate], # Chain.
-        OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
-      ).to_der
-
-      token.signature = Base64.strict_encode64(signature)
-
-      token
-    end
-
-    def self.generate(valid: PedicelPay.config[:valid])
-      ck, cc = generate_ca(valid: valid)
-
-      ik, ic = generate_intermediate(ca_key: ck, ca_certificate: cc, valid: valid)
-
-      lk, lc = generate_leaf(intermediate_key: ik, intermediate_certificate: ic, valid: valid)
+      lk, lc = generate_leaf(intermediate_key: ik, intermediate_certificate: ic, config: config)
 
       new(ca_key: ck, ca_certificate: cc,
           intermediate_key: ik, intermediate_certificate: ic,
-          leaf_key: lk, leaf_certificate: lc,
-          valid: valid)
+          leaf_key: lk, leaf_certificate: lc)
     end
 
-
-    def self.generate_ca(valid: PedicelPay.config[:valid])
+    def self.generate_ca(config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:ca]
+      cert.subject = config[:subject][:ca]
       cert.issuer = cert.subject # Self-signed
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
       ef.subject_certificate = cert
@@ -160,44 +167,51 @@ module PedicelPay
       [key, cert]
     end
 
-    def self.generate_intermediate(ca_key:, ca_certificate:, valid: PedicelPay.config[:valid])
+    def self.generate_intermediate(ca_key:, ca_certificate:, config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
-      cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
+      # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
+      cert.version = 2
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:intermediate]
+      cert.subject = config[:subject][:intermediate]
       cert.issuer = ca_certificate.subject
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
-      ef.subject_certificate = ca_certificate
+      ef.subject_certificate = cert
       ef.issuer_certificate = ca_certificate
-      cert.add_extension(ef.create_extension('keyUsage','keyCertSign, cRLSign', true))
-      cert.add_extension(ef.create_extension('subjectKeyIdentifier','hash',false))
 
-      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:intermediate_certificate], ''))
+      # According to https://tools.ietf.org/html/rfc5280#section-4.2.1.9,
+      # CA:TRUE must be set in order to allow signing using this intermediate
+      # certificate.
+      cert.add_extension(ef.create_extension('basicConstraints', 'CA:TRUE', true))
+
+      cert.add_extension(ef.create_extension('keyUsage', 'keyCertSign, cRLSign', true))
+      cert.add_extension(ef.create_extension('subjectKeyIdentifier', 'hash', false))
+
+      cert.add_extension(OpenSSL::X509::Extension.new(config[:oid][:intermediate_certificate], ''))
 
       cert.sign(ca_key, OpenSSL::Digest::SHA256.new)
 
       [key, cert]
     end
 
-    def self.generate_leaf(intermediate_key:, intermediate_certificate:, valid: PedicelPay.config[:valid])
+    def self.generate_leaf(intermediate_key:, intermediate_certificate:, config: PedicelPay.config)
       key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
       key.generate_key
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
       cert.serial = 1
-      cert.subject = PedicelPay.config[:subject][:leaf]
+      cert.subject = config[:subject][:leaf]
       cert.issuer = intermediate_certificate.subject
       cert.public_key = PedicelPay::Helper.ec_key_to_pkey_public_key(key)
-      cert.not_before = valid.min
-      cert.not_after = valid.max
+      cert.not_before = config[:valid].min
+      cert.not_after = config[:valid].max
 
       ef = OpenSSL::X509::ExtensionFactory.new
       ef.subject_certificate = cert
@@ -205,7 +219,7 @@ module PedicelPay
       cert.add_extension(ef.create_extension('keyUsage','digitalSignature', true))
       cert.add_extension(ef.create_extension('subjectKeyIdentifier','hash',false))
 
-      cert.add_extension(OpenSSL::X509::Extension.new(PedicelPay.config[:oid][:leaf_certificate], ''))
+      cert.add_extension(OpenSSL::X509::Extension.new(config[:oid][:leaf_certificate], ''))
 
       cert.sign(intermediate_key, OpenSSL::Digest::SHA256.new)
 
@@ -222,6 +236,7 @@ module PedicelPay
 
     def validate_ca
       raise KeyError, 'ca private key not valid for ca certificate' unless ca_certificate.check_private_key(ca_key)
+
       raise CertificateError, 'ca certificate is not self-signed' unless ca_certificate.verify(ca_key)
 
       true
@@ -229,6 +244,7 @@ module PedicelPay
 
     def validate_intermediate
       raise KeyError, 'intermediate private key not valid for intermediate certificate' unless intermediate_certificate.check_private_key(intermediate_key)
+
       raise CertificateError, 'intermediate certificate not signed by ca' unless intermediate_certificate.verify(ca_key)
 
       true
@@ -236,7 +252,8 @@ module PedicelPay
 
     def validate_leaf
       raise KeyError, 'leaf private key not valid for leaf certificate' unless leaf_certificate.check_private_key(leaf_key)
-      raise CertificateError, 'leaf certificate not signed my intermediate' unless leaf_certificate.verify(intermediate_key)
+
+      raise CertificateError, 'leaf certificate not signed by intermediate' unless leaf_certificate.verify(intermediate_key)
 
       true
     end
