@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
 
   s.add_development_dependency 'bundler', '~> 1.16'
-  s.add_development_dependency 'pry'
   s.add_runtime_dependency 'pedicel', '~> 0.0.2'
   s.add_runtime_dependency 'thor'
   s.add_runtime_dependency 'openssl' # for ruby <= 2.3
