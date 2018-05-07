@@ -6,8 +6,8 @@ require 'pedicel-pay/version'
 Gem::Specification.new do |s|
   s.name          = 'pedicel-pay'
   s.version       = PedicelPay::VERSION
-  s.authors       = ['Clearhaus A/S']
-  s.email         = ['hello@clearhaus.com']
+  s.author        = 'Clearhaus A/S'
+  s.email         = 'hello@clearhaus.com'
 
   s.summary       = 'Backend and client part of Apple Pay'
   s.homepage      = 'https://github.com/clearhaus/pedicel-pay'
