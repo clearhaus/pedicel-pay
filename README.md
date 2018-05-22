@@ -60,8 +60,7 @@ Sample data
 
 ```ruby
 token = PedicelPay::Token.new.sample
-backend.encrypt(token: token, recipient: client)
-backend.sign(token)
+backend.encrypt_and_sign(token, recipient: client)
 puts token.to_json
 ```
 
@@ -75,8 +74,7 @@ token.unencrypted_data.currency = '987' # EUR
 token.unencrypted_data.amount = 1234 # 12.34 EUR
 token.sample # Sample remaining.
 
-backend.encrypt(token: token, recipient: client)
-backend.sign(token)
+backend.encrypt_and_sign(token, recipient: client)
 puts token.to_json
 ```
 
