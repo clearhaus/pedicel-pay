@@ -14,9 +14,9 @@ module PedicelPay
       :version
 
     def initialize(unencrypted_data: nil, encrypted_data: nil, header: nil, signature: nil, version: 'EC_v1')
-      @unencrypted_data = unencrypted_data
+      @unencrypted_data = unencrypted_data || TokenData.new
       @encrypted_data   = encrypted_data
-      @header           = header
+      @header           = header || TokenHeader.new
       @signature        = signature
       @version          = version
     end
