@@ -17,11 +17,11 @@ module PedicelPay
       raise Error, 'missing ephemeral_pubkey' unless ephemeral_pubkey
 
       result = {
-        'ephemeralPublicKey' => Base64.strict_encode64(Helper.ec_key_to_pkey_public_key(ephemeral_pubkey).to_der),
-        'publicKeyHash'      => pubkey_hash,
-        'transactionId'      => Helper.bytestring_to_hex(transaction_id),
+        ephemeralPublicKey: Base64.strict_encode64(Helper.ec_key_to_pkey_public_key(ephemeral_pubkey).to_der),
+        publicKeyHash:      pubkey_hash,
+        transactionId:      Helper.bytestring_to_hex(transaction_id),
       }
-      result.merge!('applicationData' => data_hash) if data_hash
+      result.merge!(applicationData: data_hash) if data_hash
 
       result
     end
