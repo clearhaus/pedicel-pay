@@ -35,10 +35,10 @@ module PedicelPay
       raise Error, 'no encrypted data' unless encrypted_data
 
       {
-        'data'      => Base64.strict_encode64(encrypted_data),
-        'header'    => header.to_hash,
-        'signature' => signature,
-        'version'   => version,
+        data:      Base64.strict_encode64(encrypted_data),
+        header:    header.to_hash,
+        signature: signature,
+        version:   version,
       }
     end
 
