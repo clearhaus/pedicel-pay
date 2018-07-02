@@ -85,7 +85,7 @@ module PedicelPay
       token
     end
 
-    def sign(token, certificate: leaf_certificate, key: leaf_key)
+    def sign(token, certificate: leaf_certificate, key: leaf_key, overwrite: true)
       raise ArgumentError, 'token has no encrypted_data' unless token.encrypted_data
       raise ArgumentError, 'token has no ephemeral_pubkey' unless token.header.ephemeral_pubkey
 
@@ -104,9 +104,13 @@ module PedicelPay
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
       )
 
-      if token.signature # Already signed.
-        oldsig = OpenSSL::PKCS7.new(Base64.strict_decode64(token.signature))
-        signature = oldsig.add_signer(signature.signers.first)
+      if overwrite
+        # Just overwrite token.signature.
+      else
+        if token.signature # Already signed.
+          existing_signature = OpenSSL::PKCS7.new(Base64.strict_decode64(token.signature))
+          signature = existing_signature.add_signer(signature.signers.first)
+        end
       end
 
       token.signature = Base64.strict_encode64(signature.to_der)
