@@ -102,7 +102,7 @@ module PedicelPay
     end
 
     def card_expired?(now)
-      Time.parse(expired) <= now
+      Time.parse(expiry) <= now
     end
 
     def self.sample_expiry(expired: nil, now: nil, soon: nil)
