@@ -93,7 +93,7 @@ module PedicelPay
       self.dm_id ||= Helper.bytestring_to_hex(PedicelPay.config[:random].bytes(5))
 
       # Cryptogram
-      self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(10))
+      self.cryptogram ||= Base64.strict_encode64(PedicelPay.config[:random].bytes(20))
 
       # ECI
       self.eci ||= %w[05 06 07].sample
