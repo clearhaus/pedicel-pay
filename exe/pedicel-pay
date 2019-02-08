@@ -137,6 +137,19 @@ module PedicelPay
       puts token.to_json
     end
 
+    desc 'extract-symmetric-key', 'Extract the symmetric key that is used for encryption/decryption of the token'
+    option 'client-path', type: :string, path: true, aliases: :c
+    option 'file', type: :string, aliases: :f
+
+    def extract_symmetric_key
+      raw_token = options['file'] ? File.read(options['file']) : $stdin.read
+      token = JSON.parse(raw_token)
+
+      client = Helper.load_client(options['client-path'])
+
+      puts client.symmetric_key(token, certificate: client.certificate)
+    end
+
 
     desc 'decrypt-token', 'Decrypt a token'
     option 'client-path', type: :string, path: true, aliases: :c
