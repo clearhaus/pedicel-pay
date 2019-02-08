@@ -104,6 +104,17 @@ module PedicelPay
         OpenSSL::PKCS7::BINARY # Handle 0x00 correctly.
       )
 
+      # Check that the newly created signature is good.
+      flags = \
+        # https://wiki.openssl.org/index.php/Manual:PKCS7_verify(3)#VERIFY_PROCESS
+        OpenSSL::PKCS7::NOCHAIN  | # Ignore certs in the message.
+        OpenSSL::PKCS7::NOINTERN   # Only look at the supplied certificate.
+      trust_store = OpenSSL::X509::Store.new
+      trust_store.add_cert(ca_certificate).add_cert(intermediate_certificate)
+      unless signature.verify([certificate], trust_store, message, flags)
+        fail 'signature is wrong'
+      end
+
       if replace
         # Just replace token.signature.
       else
