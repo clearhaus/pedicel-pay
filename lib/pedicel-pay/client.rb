@@ -39,7 +39,7 @@ module PedicelPay
         decrypt(private_key: key, certificate: certificate, ca_certificate_pem: ca_certificate_pem, now: now)
     end
 
-    def symmetric_key(token,foo)
+    def symmetric_key(token)
       Pedicel::EC.
         new(token).
         symmetric_key(private_key: key, certificate: certificate).
