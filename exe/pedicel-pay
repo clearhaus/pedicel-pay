@@ -147,7 +147,7 @@ module PedicelPay
 
       client = Helper.load_client(options['client-path'])
 
-      puts client.symmetric_key(token, certificate: client.certificate)
+      puts client.symmetric_key(token)
     end
 
 
