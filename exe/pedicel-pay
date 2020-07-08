@@ -165,6 +165,28 @@ module PedicelPay
 
       puts client.decrypt(token, ca_certificate_pem: backend.ca_certificate.to_pem)
     end
+
+    desc 'decrypt-token-from-symmetric-key', 'Decrypt a token using the symmetric key'
+    option 'symmetric-key', type: :string, alias: :k
+    option 'file', type: :string, aliases: :f
+    option 'backend-path', type: :string, path: true, aliases: :b
+    option 'time', type: :string, alias: :t
+
+    def decrypt_token_from_symmetric_key
+      raw_token = options['file'] ? File.read(options['file']) : $stdin.read
+      token = JSON.parse(raw_token)
+
+      params = { symmetric_key: Helper.hex_to_bytestring(options['symmetric-key']) }
+
+      params.merge!(now: Time.parse(options['time'])) if options['time']
+
+      if options['backend-path']
+        backend = Helper.load_backend(options['backend-path'])
+        params.merge!(ca_certificate_pem: backend.ca_certificate.to_pem)
+      end
+
+      puts Pedicel::EC.new(token).decrypt(params)
+    end
   end
 
   class Helper
