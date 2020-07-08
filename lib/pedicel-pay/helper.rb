@@ -20,6 +20,10 @@ module PedicelPay
       string.unpack('H*').first
     end
 
+    def self.hex_to_bytestring(hex)
+      [hex].pack('H*')
+    end
+
     def self.merchant_id(x)
       case x
       when Client
