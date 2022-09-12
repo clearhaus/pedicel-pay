@@ -1,4 +1,4 @@
-FROM ruby:2.3.6-alpine
+FROM ruby:2.7.4-alpine
 
 LABEL maintainer="Clearhaus"
 
