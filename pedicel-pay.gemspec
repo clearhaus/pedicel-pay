@@ -21,5 +21,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake', '~> 12.3'
 
   # s.add_runtime_dependency 'pedicel', '~> 1.1.0'
-  s.add_runtime_dependency 'thor', '~> 0.20'
+  s.add_runtime_dependency 'thor'
 end
