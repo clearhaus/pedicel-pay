@@ -1,17 +1,8 @@
-GIT
-  remote: https://github.com/cub8/pedicel
-  revision: ac88a322af8b9555ccbdfe4915589c369609ba37
-  branch: raise-ruby-version
-  specs:
-    pedicel (1.1.0)
-      dry-logic (~> 1.0)
-      dry-schema (~> 1.9)
-      dry-validation (= 1.9)
-
 PATH
   remote: .
   specs:
     pedicel-pay (0.0.7)
+      pedicel (~> 1.1.0)
       thor
 
 GEM
@@ -54,15 +45,19 @@ GEM
       dry-initializer (~> 3.0)
       dry-schema (~> 1.11, >= 1.11.0)
       zeitwerk (~> 2.6)
+    pedicel (1.1.0)
+      dry-logic (~> 1.0)
+      dry-schema (~> 1.9)
+      dry-validation (= 1.9)
     rake (12.3.3)
     thor (0.20.3)
     zeitwerk (2.6.11)
 
 PLATFORMS
+  ruby
   x86_64-darwin-21
 
 DEPENDENCIES
-  pedicel!
   pedicel-pay!
   rake (~> 12.3)
 
