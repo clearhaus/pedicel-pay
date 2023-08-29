@@ -10,10 +10,19 @@ module PedicelPay
 
     def self.ec_key_to_pkey_public_key(ec_key)
       # EC#public_key is not a PKey public key, but an EC point.
-      pub = OpenSSL::PKey::EC.new(ec_key.group)
-      pub.public_key = ec_key.is_a?(OpenSSL::PKey::PKey) ? ec_key.public_key : ec_key
+      group = ec_key.group
+      point = ec_key.is_a?(OpenSSL::PKey::PKey) ? ec_key.public_key : ec_key
+      asn1 = OpenSSL::ASN1::Sequence(
+        [
+          OpenSSL::ASN1::Sequence([
+            OpenSSL::ASN1::ObjectId('id-ecPublicKey'),
+            OpenSSL::ASN1::ObjectId(group.curve_name)
+          ]),
+          OpenSSL::ASN1::BitString(point.to_octet_string(:uncompressed))
+        ]
+      )
 
-      pub
+      OpenSSL::PKey::EC.new(asn1.to_der)
     end
 
     def self.bytestring_to_hex(string)

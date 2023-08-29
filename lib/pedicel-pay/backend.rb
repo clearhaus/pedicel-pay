@@ -140,7 +140,7 @@ module PedicelPay
                else raise ArgumentError, 'invalid recipient'
                end
 
-      ephemeral_seckey = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE).generate_key
+      ephemeral_seckey = OpenSSL::PKey::EC.generate(PedicelPay::EC_CURVE)
 
       [ephemeral_seckey.dh_compute_key(pubkey), ephemeral_seckey.public_key]
     end
@@ -158,8 +158,7 @@ module PedicelPay
     end
 
     def self.generate_ca(config: PedicelPay.config)
-      key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
-      key.generate_key
+      key = OpenSSL::PKey::EC.generate(PedicelPay::EC_CURVE)
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
@@ -183,8 +182,7 @@ module PedicelPay
     end
 
     def self.generate_intermediate(ca_key:, ca_certificate:, config: PedicelPay.config)
-      key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
-      key.generate_key
+      key = OpenSSL::PKey::EC.generate(PedicelPay::EC_CURVE)
 
       cert = OpenSSL::X509::Certificate.new
       # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
@@ -216,8 +214,7 @@ module PedicelPay
     end
 
     def self.generate_leaf(intermediate_key:, intermediate_certificate:, config: PedicelPay.config)
-      key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
-      key.generate_key
+      key = OpenSSL::PKey::EC.generate(PedicelPay::EC_CURVE)
 
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2 # https://www.ietf.org/rfc/rfc5280.txt -> Section 4.1, search for "v3(2)".
