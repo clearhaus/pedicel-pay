@@ -9,14 +9,18 @@ module PedicelPay
     end
 
     def self.ec_key_to_pkey_public_key(ec_key)
-      # EC#public_key is not a PKey public key, but an EC point.
-      group = ec_key.group
+      # OpenSSL::PKey::EC#public_key is not a PKey public key but an EC point.
+      # The ASN1 detour below is because OpenSSL < 3 does not have
+      # OpenSSL::PKey::EC#public_to_pem. Otherwise, this method could be served
+      # directly to OpenSSL::PKey::EC.new. An approach respecting the
+      # immutability of a PKey and the potential absence of #public_to_pem
+      # is necessary. See https://stackoverflow.com/a/75572569.
       point = ec_key.is_a?(OpenSSL::PKey::PKey) ? ec_key.public_key : ec_key
       asn1 = OpenSSL::ASN1::Sequence(
         [
           OpenSSL::ASN1::Sequence([
             OpenSSL::ASN1::ObjectId('id-ecPublicKey'),
-            OpenSSL::ASN1::ObjectId(group.curve_name)
+            OpenSSL::ASN1::ObjectId(ec_key.group.curve_name)
           ]),
           OpenSSL::ASN1::BitString(point.to_octet_string(:uncompressed))
         ]
