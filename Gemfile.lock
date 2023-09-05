@@ -1,0 +1,62 @@
+PATH
+  remote: .
+  specs:
+    pedicel-pay (0.0.8)
+      pedicel (~> 1.2.0)
+      thor
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    concurrent-ruby (1.2.2)
+    dry-configurable (1.1.0)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-core (1.0.0)
+      concurrent-ruby (~> 1.0)
+      zeitwerk (~> 2.6)
+    dry-inflector (1.0.0)
+    dry-initializer (3.1.1)
+    dry-logic (1.5.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-schema (1.13.3)
+      concurrent-ruby (~> 1.0)
+      dry-configurable (~> 1.0, >= 1.0.1)
+      dry-core (~> 1.0, < 2)
+      dry-initializer (~> 3.0)
+      dry-logic (>= 1.4, < 2)
+      dry-types (>= 1.7, < 2)
+      zeitwerk (~> 2.6)
+    dry-types (1.7.1)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0)
+      dry-inflector (~> 1.0)
+      dry-logic (~> 1.4)
+      zeitwerk (~> 2.6)
+    dry-validation (1.10.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0, < 2)
+      dry-initializer (~> 3.0)
+      dry-schema (>= 1.12, < 2)
+      zeitwerk (~> 2.6)
+    pedicel (1.2.0)
+      dry-core (= 1.0.0)
+      dry-logic (~> 1.0)
+      dry-schema (~> 1.9)
+      dry-validation (~> 1.9)
+    rake (12.3.3)
+    thor (1.2.2)
+    zeitwerk (2.6.11)
+
+PLATFORMS
+  ruby
+  x86_64-darwin-21
+
+DEPENDENCIES
+  pedicel-pay!
+  rake (~> 12.3)
+
+BUNDLED WITH
+   2.3.26

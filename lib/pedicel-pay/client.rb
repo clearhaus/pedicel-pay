@@ -13,8 +13,7 @@ module PedicelPay
     end
 
     def generate_key
-      @key = OpenSSL::PKey::EC.new(PedicelPay::EC_CURVE)
-      @key.generate_key
+      @key = OpenSSL::PKey::EC.generate(PedicelPay::EC_CURVE)
 
       @key
     end
