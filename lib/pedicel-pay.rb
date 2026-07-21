@@ -33,8 +33,9 @@ module PedicelPay
   end
 end
 
+ec_methods = OpenSSL::PKey::EC.instance_methods
 # Monkey-patch to make OpenSSL::X509::Certificate#sign work.
-if OpenSSL::PKey::EC.new.respond_to?(:private_key?) && !OpenSSL::PKey::EC.new.respond_to?(:private?)
+if ec_methods.include?(:private_key?) && !ec_methods.include?(:private?)
   class OpenSSL::PKey::EC
     def private?
       private_key?
