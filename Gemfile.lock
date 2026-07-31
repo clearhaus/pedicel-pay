@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pedicel-pay (0.0.8)
+    pedicel-pay (0.0.9)
       pedicel (~> 1.2.0)
       thor
 
