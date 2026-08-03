@@ -22,4 +22,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'pedicel', '~> 1.2.0'
   s.add_runtime_dependency 'thor'
+  s.add_runtime_dependency 'base64'
+  s.add_runtime_dependency 'logger'
+  s.add_runtime_dependency 'bigdecimal'
 end
