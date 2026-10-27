@@ -18,7 +18,9 @@ Gem::Specification.new do |s|
   s.executables   = s.files.grep(/^exe\//) { |f| File.basename(f) }
   s.require_paths = ['lib']
 
+  s.add_development_dependency 'ostruct', '~> 0.6'
   s.add_development_dependency 'rake', '~> 12.3'
+  s.add_development_dependency 'rspec', '~> 3.7'
 
   s.add_runtime_dependency 'pedicel', '~> 1.2.0'
   s.add_runtime_dependency 'thor'
